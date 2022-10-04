@@ -228,33 +228,40 @@ function out_img = pass_filter(Img, filter_type, D0, n)
     out_img = uint8(out_img);
 end
 
+% Fungsi untuk mendapatkan kernel BHPF (Butterworth High Pass Filter
 function H = BHPF(D0, n, P, Q)
     H = 1 - BLPF(D0, n, P, Q);
 end
 
+% Fungsi untuk mendapatkan kernel GHPF (Gaussian High Pass Filter)
 function H = GHPF(D0, P, Q)
     H = 1 - GLPF(D0, P, Q);
 end
 
+% Fungsi untuk mendapatkan kernel IHPF (Ideal High Pass Filter)
 function H = IHPF(D0, P, Q)
     H = 1 - ILPF(D0, P, Q);
 end
 
+% Fungsi untuk mendapatkan kernel BLPF (Butterworth Low Pass Filter)
 function H = BLPF(D0, n, P, Q)
     D = designing_filter(P, Q);
     H = 1./(1 + (D./D0).^(2*n));
 end
 
+% Fungsi untuk mendapatkan kernel GLPF (Gaussian Low Pass Filter)
 function H = GLPF(D0, P, Q)
     D = designing_filter(P, Q);
     H = exp(-(D.^2)./(2*(D0^2)));
 end
 
+% Fungsi untuk mendapatkan kernel ILPF (Ideal Low Pass Filter)
 function H = ILPF(D0, P, Q)
     D = designing_filter(P, Q);
     H = double(D <= D0);
 end
 
+% Fungsi template untuk membuat filter pada ranah frequency
 function D = designing_filter(P, Q)
     % Set up range of variables.
     u = 0:(P-1);
@@ -273,15 +280,19 @@ function D = designing_filter(P, Q)
     D = sqrt(U.^2 + V.^2);
 end
 
+% Fungsi untuk mengubah spatial domain ke frequency domain
 function [ft_img, fs_img] = spatial2frequency(Img)
     ft_img = fft2(double(Img));
     fs_img = uint8(log(1+abs(fftshift(ft_img))));
 end
 
+% Fungsi untuk mengubah frequency domain ke spatial domain
 function Img = frequency2spatial(ft_img)
     Img = uint8(real(ifft2(ft_img)));
 end
 
+% Fungsi untuk melakukan padding pada image agar output shape hasil
+% konvolusi sama dengan input shape image
 function Img = padsameimg(Img, kernel_height, kernel_width)
     two_padsize_h = kernel_height - 1;
     two_padsize_w = kernel_width - 1;
@@ -318,15 +329,17 @@ end
 
 % Same padding, output image shape = input image shape
 function conv_img = conv2d(Img, kernel)
-    Img = double(Img);
-    [kernel_height, kernel_width] = size(kernel);
-    Img = padsameimg(Img, kernel_height, kernel_width);
-    [height, width, channels] = size(Img);
-    [output_height, output_width] = deal(height - kernel_height + 1, width - kernel_width + 1);
-    conv_img = zeros(output_height, output_width, channels);
+    Img = double(Img); % Samakan format image yang diterima
+    [kernel_height, kernel_width] = size(kernel); % Dapatkan size dari kernel
+    Img = padsameimg(Img, kernel_height, kernel_width); % Lakukan padding pada image agar output shape hasil konvolusi sama dengan input shapenya
+    [height, width, channels] = size(Img); % Dapatkan size dari image
+    [output_height, output_width] = deal(height - kernel_height + 1, width - kernel_width + 1); % Calculate output shape
+    conv_img = zeros(output_height, output_width, channels); % Initiate image output hasil convolution
+    % Untuk setiap channel warna gambar lakukan konvolui
     for c = 1:channels
         conv_img(:, :, c) = conv_operation(Img(:, :, c), kernel);
     end
+    % Ubah ke bentuk uint8
     conv_img = uint8(conv_img);
 end
 
@@ -335,6 +348,7 @@ function conv_img = conv_operation(mat, kernel)
     [kernel_height, kernel_width] = size(kernel);
     [output_height, output_width] = deal(height - kernel_height + 1, width - kernel_width + 1);
     conv_img = zeros(output_height, output_width);
+    % Operasi konvolusi
     for i = 1:output_height
         for j = 1:output_width
             curwindow = mat(i:i+kernel_height-1, j:j+kernel_width-1);
@@ -345,15 +359,17 @@ end
 
 % Same padding, output image shape = input image shape
 function medfil_img = medfil(Img, window_size)
-    Img = double(Img);
-    [window_height, window_width] = deal(window_size(1), window_size(2));
-    Img = padsameimg(Img, window_height, window_width);
-    [height, width, channels] = size(Img);
-    [output_height, output_width] = deal(height - window_height + 1, width - window_width + 1);
-    medfil_img = zeros(output_height, output_width, channels);
+    Img = double(Img); % Samakan format image yang diterima
+    [window_height, window_width] = deal(window_size(1), window_size(2)); % Dapatkan window size
+    Img = padsameimg(Img, window_height, window_width); % Lakukan padding pada image agar output shape hasil medfilter sama dengan input shapenya
+    [height, width, channels] = size(Img); % Dapatkan size image
+    [output_height, output_width] = deal(height - window_height + 1, width - window_width + 1); % Calculate output shape
+    medfil_img = zeros(output_height, output_width, channels); % Initiate image output hasil medfilter
+    % Untuk setiap channel warna gambar
     for c = 1:channels
-        medfil_img(:, :, c) = medfil_operation(Img(:, :, c), window_size);
+        medfil_img(:, :, c) = medfil_operation(Img(:, :, c), window_size); % Lakukan operasi medfilter
     end
+    % Ubah ke bentuk uint8
     medfil_img = uint8(medfil_img);
 end
 
@@ -365,7 +381,7 @@ function medfil_img = medfil_operation(mat, window_size)
     for i = 1:output_height
         for j = 1:output_width
             curwindow = mat(i:i+window_height-1, j:j+window_width-1);
-            medfil_img(i, j) = median(curwindow, "all");
+            medfil_img(i, j) = median(curwindow, "all"); % Operasi Median Filter
         end
     end
 end
